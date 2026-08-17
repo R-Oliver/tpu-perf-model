@@ -1,0 +1,98 @@
+[
+  {
+    "sku": "v5e",
+    "dry_run": false,
+    "started_utc": "2026-08-16T05:21:02.299149+00:00",
+    "hostname": "t1v-n-c795ca73-w-0",
+    "python": "3.13.15",
+    "jax": "0.11.0",
+    "jaxlib": "0.11.0",
+    "libtpu": "0.0.44.1",
+    "device_kind": "TPU v5 lite",
+    "n_devices": 1,
+    "warmup": 5,
+    "iters": 20,
+    "overhead_floor_s": 0.00010555999999439791,
+    "live_hardware": {
+      "device_kind": "TPU v5 lite",
+      "chip_version": "v5e",
+      "peak_flops": {
+        "bf16": 197000000000000.0,
+        "int8": 394000000000000.0
+      },
+      "hbm_bandwidth_bytes": 820000000000.0,
+      "hbm_bytes": 17200000000.0,
+      "mxu_dim": 128,
+      "num_mxus_per_core": 4,
+      "num_cores": 1,
+      "vmem_bytes_per_core": 134217728.0,
+      "tile_multiple": {
+        "bf16": [
+          8,
+          128
+        ],
+        "int8": [
+          32,
+          128
+        ],
+        "f32": [
+          8,
+          128
+        ],
+        "int32": [
+          8,
+          128
+        ]
+      }
+    },
+    "spec_mismatches": []
+  },
+  {
+    "sku": "v6e",
+    "dry_run": false,
+    "started_utc": "2026-08-16T16:28:23.883454+00:00",
+    "hostname": "t1v-n-2d84f25a-w-0",
+    "python": "3.11.13",
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2",
+    "libtpu": "0.0.42.1",
+    "device_kind": "TPU v6 lite",
+    "n_devices": 1,
+    "warmup": 5,
+    "iters": 20,
+    "overhead_floor_s": 0.00011873000001116907,
+    "live_hardware": {
+      "device_kind": "TPU v6 lite",
+      "chip_version": "v6e",
+      "peak_flops": {
+        "bf16": 920000000000000.0,
+        "int8": 1840000000000000.0
+      },
+      "hbm_bandwidth_bytes": 1640000000000.0,
+      "hbm_bytes": 34400000000.0,
+      "mxu_dim": 256,
+      "num_mxus_per_core": 2,
+      "num_cores": 1,
+      "vmem_bytes_per_core": 134217728.0,
+      "tile_multiple": {
+        "bf16": [
+          8,
+          128
+        ],
+        "int8": [
+          32,
+          128
+        ],
+        "f32": [
+          8,
+          128
+        ],
+        "int32": [
+          8,
+          128
+        ]
+      }
+    },
+    "spec_mismatches": []
+  }
+]

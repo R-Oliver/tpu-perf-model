@@ -1,0 +1,12 @@
+name: v6e
+peak_flops:
+  bf16: 9.20e14
+  int8: 1.84e15
+hbm_bandwidth_bytes: 1.64e12
+mxu_dim: 256
+vmem_bytes: 134217728
+tile_multiple:
+  bf16: [8, 128]
+  int8: [32, 128]
+  f32: [8, 128]
+  int32: [8, 128]

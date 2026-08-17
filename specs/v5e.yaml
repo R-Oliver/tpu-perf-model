@@ -1,0 +1,12 @@
+name: v5e
+peak_flops:
+  bf16: 1.97e14
+  int8: 3.94e14
+hbm_bandwidth_bytes: 8.20e11
+mxu_dim: 128
+vmem_bytes: 134217728
+tile_multiple:
+  bf16: [8, 128]
+  int8: [32, 128]
+  f32: [8, 128]
+  int32: [8, 128]
