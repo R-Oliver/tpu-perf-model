@@ -35,7 +35,7 @@ That two-argument call is spec-only. Evaluation supplies the measured launch flo
 | `shapes.py` | Seeded square, random, skinny, tile-probe, and ridge families |
 | `benchmark.py` | TPU collection with warmup, synchronization, median/IQR, and resume |
 | `evaluate.py` | Measurement loading, metrics, and result tables |
-| `analysis.py` | Textbook/accounted baselines, diagnostic calibration, and padding ablation |
+| `analysis.py` | Baselines, calibration, ablations, and audit tables for derived report claims |
 | `figures.py`, `figures/` | Plots made only from evaluator output |
 | `data/measurements.csv` | 900 raw timing summaries in one narrow schema |
 | `data/runs.json` | Exact collection environments and measured launch floors |

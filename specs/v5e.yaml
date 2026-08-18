@@ -1,3 +1,4 @@
+# Derived from https://github.com/jax-ml/jax/blob/91eac725cd1070fc0429995629313ea9c08c1ade/jax/_src/tpu_info.py
 name: v5e
 peak_flops:
   bf16: 1.97e14

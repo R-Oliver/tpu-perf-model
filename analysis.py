@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import hashlib
 import math
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -234,6 +235,128 @@ def candidate_results(rows: list[dict], runs: list[dict], specs_dir: Path) -> li
     return output
 
 
+def initial_hard_max_regime_table(
+    rows: list[dict], specs_dir: Path
+) -> list[dict]:
+    """Break down the accounted hard-max baseline by its own Tc/Tm regime."""
+
+    hardware_by_sku = {
+        sku: load_hardware(sku, specs_dir) for sku in {row["sku"] for row in rows}
+    }
+    enriched = []
+    for row in rows:
+        hardware = hardware_by_sku[row["sku"]]
+        problem = model.GemmProblem(row["M"], row["N"], row["K"], row["dtype"])
+        compute_s = _all_dimension_flops(problem, hardware) / hardware.peak_flops[
+            problem.dtype
+        ]
+        memory_s = _legacy_traffic(problem, hardware) / hardware.hbm_bandwidth_bytes
+        ratio = compute_s / memory_s
+        if 0.5 <= ratio <= 2.0:
+            regime = "near_ridge"
+        elif ratio > 2.0:
+            regime = "compute_bound"
+        else:
+            regime = "memory_bound"
+        enriched.append(
+            {
+                **row,
+                "initial_regime": regime,
+                "predicted_s": row["accounted"],
+            }
+        )
+    return evaluate.result_table(enriched, ("sku", "initial_regime"))
+
+
+def tile_boundary_penalties(
+    rows: list[dict],
+    *,
+    dtype: str = "bf16",
+    boundaries: tuple[int, ...] = (512, 1024, 2048),
+) -> list[dict]:
+    """Measured useful-throughput penalty immediately above selected boundaries."""
+
+    skus = sorted({row["sku"] for row in rows})
+
+    def find_probe(sku: str, varied: str, value: int) -> dict:
+        fixed_dimension = "K" if varied == "M" else "M"
+        matches = [
+            row
+            for row in rows
+            if row["sku"] == sku
+            and row["family"] == "tile_probe"
+            and row["dtype"] == dtype
+            and row[varied] == value
+            and row["N"] == 4096
+            and row[fixed_dimension] == 4096
+        ]
+        if len(matches) != 1:
+            raise ValueError(
+                f"expected one {sku} {dtype} {varied}={value} tile probe, "
+                f"found {len(matches)}"
+            )
+        return matches[0]
+
+    output = []
+    for varied in ("M", "K"):
+        for boundary in boundaries:
+            result = {"boundary": f"{varied}: {boundary} to {boundary + 1}"}
+            for sku in skus:
+                below = find_probe(sku, varied, boundary)
+                above = find_probe(sku, varied, boundary + 1)
+                below_flops = 2 * below["M"] * below["N"] * below["K"]
+                above_flops = 2 * above["M"] * above["N"] * above["K"]
+                below_throughput = below_flops / below["median_s"]
+                above_throughput = above_flops / above["median_s"]
+                result[sku] = 1.0 - above_throughput / below_throughput
+            output.append(result)
+    return output
+
+
+def worst_decile_family_counts(rows: list[dict]) -> list[dict]:
+    """Count each family in the worst tenth of final-model errors per SKU."""
+
+    output = []
+    for sku in sorted({row["sku"] for row in rows}):
+        sample = [row for row in rows if row["sku"] == sku]
+        tail_n = math.ceil(len(sample) / 10)
+        ranked = sorted(
+            sample,
+            key=lambda row: abs(row["final"] / row["median_s"] - 1.0),
+            reverse=True,
+        )
+        counts = Counter(row["family"] for row in ranked[:tail_n])
+        for family in sorted({row["family"] for row in sample}):
+            output.append(
+                {
+                    "sku": sku,
+                    "family": family,
+                    "count": counts[family],
+                    "tail_n": tail_n,
+                }
+            )
+    return output
+
+
+def _penalty_markdown(rows: list[dict]) -> str:
+    if not rows:
+        return ""
+    skus = [column for column in rows[0] if column != "boundary"]
+    lines = [
+        "| boundary | " + " | ".join(skus) + " |",
+        "|---|" + "|".join("---:" for _ in skus) + "|",
+    ]
+    lines += [
+        "| "
+        + row["boundary"]
+        + " | "
+        + " | ".join(f"{row[sku]:.1%}" for sku in skus)
+        + " |"
+        for row in rows
+    ]
+    return "\n".join(lines)
+
+
 def main() -> None:
     root = Path(__file__).parent
     measurements = evaluate.load_measurements(root / "data" / "measurements.csv")
@@ -268,6 +391,19 @@ def main() -> None:
                 f"{diagnostic['p90_abs_rel']:.1%} "
                 f"bias={diagnostic['geomean_ratio']:.3f}x"
             )
+
+    print("\n## Initial accounted hard-max by regime\n")
+    print(
+        evaluate.markdown_table(
+            initial_hard_max_regime_table(candidates, root / "specs")
+        )
+    )
+
+    print("\n## Measured bf16 tile-boundary penalties\n")
+    print(_penalty_markdown(tile_boundary_penalties(measurements)))
+
+    print("\n## Final-model worst error decile by family\n")
+    print(evaluate.markdown_table(worst_decile_family_counts(candidates)))
 
 
 if __name__ == "__main__":
